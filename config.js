@@ -4,7 +4,7 @@ module.exports = {
         will appear. So far only 'contextmenu'
         and 'menu' is allowed
     */
-    displayName: 'Disturbance Tracker',
+    displayName: 'Cyclone Tracker',
     // Menu
     hook: 'menu',
     // External dependencies
