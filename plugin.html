@@ -2,7 +2,6 @@
     <script>
         // Windy API modules are imported via '@windy/nameOfModule'
         import map from '@windy/map';
-        // custom marker for disturbance
         const MARKER = encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' style='margin:auto;background:rgba(160, 88, 181,0);display:block;' width='200px' height='200px' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid'><circle cx='50' cy='50' r='0' fill='none' stroke='#e90c59' stroke-width='17'>  <animate attributeName='r' repeatCount='indefinite' dur='1s' values='0;26' keyTimes='0;1' keySplines='0 0.2 0.8 1' calcMode='spline' begin='-0.5s'></animate>  <animate attributeName='opacity' repeatCount='indefinite' dur='1s' values='1;0' keyTimes='0;1' keySplines='0.2 0 0.8 1' calcMode='spline' begin='-0.5s'></animate></circle><circle cx='50' cy='50' r='0' fill='none' stroke='#46dff0' stroke-width='17'>  <animate attributeName='r' repeatCount='indefinite' dur='1s' values='0;26' keyTimes='0;1' keySplines='0 0.2 0.8 1' calcMode='spline'></animate>  <animate attributeName='opacity' repeatCount='indefinite' dur='1s' values='1;0' keyTimes='0;1' keySplines='0.2 0 0.8 1' calcMode='spline'></animate></circle></svg>");
         const MARKER_URL = `data:image/svg+xml;utf8,${MARKER}`;
         const Icon = L.icon({
@@ -19,118 +18,86 @@
             iconAnchor: [8, 8],
             popupAnchor: [0, 0],
         });
-        // url of datas | default = https://www.nrlmry.navy.mil/tcdat/sectors/ftp_sector_file
-        let url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6jEPD4JLNsppgMJ4wB8k4hpVHzc-8VKAkoQDwfMgeHHd18N3AEUhj8wbAgrCbKJiFzWGz_ZF0LkpV/pub?gid=0&single=true&output=csv"
-        let active_disturbance = [];
-        let disturbance = L.layerGroup();
-        let latlon_all = [];
-        Papa.parse(url, {
-            download: true,
-            complete: function (results) {
-                //number of distrubance
-                let ln = 0;
-                let nb_ln;
-                for (nb_ln in results.data) {
-                    ln++;
-                }
-                console.log('Search disturbance...');
-                console.log(ln + " disturbance.s detected.");
-                for (let i = 0; i < ln; i++) {
-                    let str = results.data[i][0];
-                    let pattern_nrl = "([0-9]{1,2})(S|A|B|L|C|E|W|P)\\s+(\\w+)\\s([0-9]{1,2})([0-9]{1,2})([0-9]{1,2})\\s([0-9]{1,2})([0-9]{1,2})\\s+([0-9]{1,2}.[0-9]{1})(S|N)\\s+([0-9]{1,3}.[0-9]{1})(E|W)\\s(SHEM|IO|ATL|WPAC|CPAC|EPAC)\\s+([0-9]{1,3})\\s+([0-9]{1,4})|(NA)";
-                    let out = str.match(pattern_nrl);
-                    let nb = out[1] + out[2]
-                    let lat;
-                    let lon;
-                    //Select the hemisphere
-                    if (out[10] == 'S') {
-                        lat = "-" + out[9];
-                    } else {
-                        lat = out[9];
-                    }
-                    if (out[12] == 'W') {
-                        lon = "-" + out[11];
-                    } else {
-                        lon = out[11];
-                    }
-                    let date = "20" + out[4] + "/" + out[5] + "/" + out[6] + " " + out[7] + ":" + out[8];
-                    let name = out[3];
-                    let pressure = out[15];
-                    let wind = out[14];
-                    L.marker({ lat, lon }, { icon: Icon }).bindPopup("<b>Date/time</b>:" + date + " <br><b>N°</b>: " + nb + "<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind).addTo(disturbance);
-                    active_disturbance.push(nb + "." + name);
-                }
-                console.log(active_disturbance);
-            }
-
+        const MARKER_FCST = encodeURIComponent("<?xml version='1.0' encoding='iso-8859-1'?> <!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  --> <svg version='1.1' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 512 512' style='enable-background:new 0 0 512 512;' xml:space='preserve'> <circle style='fill:#FEE187;' cx='255.995' cy='255.996' r='76.945'/> <g> <path style='fill:#FFC61B;' d='M255.997,347.463c-50.433,0-91.463-41.031-91.463-91.463s41.031-91.463,91.463-91.463 S347.46,205.567,347.46,256S306.429,347.463,255.997,347.463z M255.997,193.573c-34.422,0-62.427,28.005-62.427,62.427 s28.005,62.427,62.427,62.427s62.427-28.005,62.427-62.427S290.419,193.573,255.997,193.573z'/> <path style='fill:#FFC61B;' d='M255.997,512c-68.381,0-132.668-26.629-181.02-74.98c-5.669-5.669-5.669-14.862,0-20.533 c5.671-5.669,14.861-5.669,20.533,0c42.867,42.869,99.863,66.476,160.488,66.476s117.62-23.608,160.488-66.476 c42.867-42.867,66.476-99.863,66.476-160.488s-23.609-117.62-66.476-160.488c-42.869-42.869-99.863-66.476-160.488-66.476 S138.377,52.644,95.509,95.512c-57.256,57.256-79.73,141.45-58.65,219.728c2.085,7.742-2.503,15.708-10.244,17.793 c-7.75,2.088-15.708-2.501-17.795-10.244C-2.68,280.078-2.936,234.853,8.085,192.005c11.355-44.152,34.486-84.618,66.892-117.025 C123.329,26.629,187.616,0,255.997,0s132.668,26.629,181.02,74.98c48.352,48.352,74.98,112.639,74.98,181.02 s-26.629,132.667-74.98,181.02C388.665,485.371,324.377,512,255.997,512z'/> <path style='fill:#FFC61B;' d='M255.997,452.028c-108.091,0-196.028-87.938-196.028-196.028S147.906,59.972,255.997,59.972 c69.932,0,135.071,37.687,169.997,98.355c4.001,6.948,1.61,15.825-5.338,19.826c-6.951,4-15.823,1.609-19.824-5.338 c-29.76-51.693-85.258-83.807-144.834-83.807c-92.08,0-166.992,74.913-166.992,166.992s74.913,166.992,166.992,166.992 S422.989,348.079,422.989,256c0-8.018,6.501-14.518,14.518-14.518s14.518,6.5,14.518,14.518 C452.025,364.091,364.088,452.028,255.997,452.028z'/> </g></svg>");
+        const MARKER_FCST_URL = `data:image/svg+xml;utf8,${MARKER_FCST}`;
+        const Icon_Fcst = L.icon({
+            iconUrl: MARKER_FCST_URL,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+            popupAnchor: [0, 0],
         });
-        let url_line = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6jEPD4JLNsppgMJ4wB8k4hpVHzc-8VKAkoQDwfMgeHHd18N3AEUhj8wbAgrCbKJiFzWGz_ZF0LkpV/pub?gid=966820877&single=true&output=csv"
-        Papa.parse(url_line, {
-            download: true,
-            complete: function (results_line) {
-                let disturbances = {};
-                let ln = 0;
-                let nb_ln;
-                for (nb_ln in results_line.data) {
-                    ln++;
-                }
-                let year = new Date().getFullYear();
-                let today = new Date();
-
-
-                function dayDiff(d1, d2) {
-                    d1 = d1.getTime() / 86400000;
-                    d2 = d2.getTime() / 86400000;
-                    return new Number(d2 - d1).toFixed(0);
-                }
-                for (let i = 0; i < ln; i++) {
-                    let latlon = [];
-                    let str = results_line.data[i][0];
-                    let parttern_line = "([0-9]{1,2})(S|A|B|L|C|E|W|P)\\s+(\\w+)\\s([0-9]{1,2})([0-9]{1,2})([0-9]{1,2})\\s([0-9]{1,2})([0-9]{1,2})\\s+([0-9]{1,2}.[0-9]{1})(S|N)\\s+([0-9]{1,3}.[0-9]{1})(E|W)\\s(SHEM|IO|ATL|WPAC|CPAC|EPAC)\\s+([0-9]{1,3})\\s+([0-9]{1,4})|(NA)";
-                    let out_l = str.match(parttern_line);
-                    let lon_name = out_l[1] + out_l[2] + "." + out_l[3];
-                    if (active_disturbance.includes(lon_name)) {
-                        let lat;
-                        let lon;
-                        let nb = out_l[1] + out_l[2]
-                        if (out_l[10] == 'S') {
-                            lat = "-" + out_l[9];
-                        } else {
-                            lat = out_l[9];
-                        }
-                        if (out_l[12] == 'W') {
-                            lon = "-" + out_l[11];
-                        } else {
-                            lon = out_l[11];
-                        }
-                        let date = new Date("20" + out_l[4] + "/" + out_l[5] + "/" + out_l[6] + " " + out_l[7] + ":" + out_l[8]);
-                        let hour = out_l[6] + ":" + out_l[7];
-                        let name = out_l[3];
-                        let pressure = out_l[15];
-                        let wind = out_l[14];
-                        L.marker({ lat, lon }, { icon: Icon_Dot }).bindPopup("<b>Date/time</b>:" + date + " <br><b>N°</b>: " + nb + "<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind).addTo(disturbance);
+        let disturbance = L.layerGroup();
+        const disturbances = {};
+        const jtwc = {};
+        fetch('https://www.meteoi.re/windy.php')
+            .then(res => res.json())
+            .then((out) => {
+                Object.keys(out).forEach(key => {
+                    let lata = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lat']);
+                    let lona = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lon']);
+                    jtwc[key] = [];
+                    jtwc[key].push(new Array(parseFloat(lata), parseFloat(lona)));
+                    L.marker([lata, lona], { icon: Icon }).addTo(disturbance);
+                    Object.values(out[key]['track']).forEach(entry => {
+                        let name = key;
+                        let date = entry["date"];
+                        let time = entry["time"];
+                        let lat = entry["lat"];
+                        let lon = entry["lon"];
+                        let wind = entry["wind"];
+                        let pressure = entry["pressure"];
+                        let wind_kmh = Math.ceil(wind * 1.852);
+                        let gust = Math.ceil(wind * 1.35);
+                        let gust_kmh = Math.ceil(wind_kmh * 1.35);
+                        L.marker({ lat, lon }, { icon: Icon_Dot }).bindPopup("<b>Date/time</b>:" + date + " " + time +"<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind + "  | <b>Gusts(knots):</b> " + gust + "<br><b>Wind(km/h)</b>: " + wind_kmh + "  | <b>Gusts(km/h):</b>" + gust_kmh + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
                         if (name in disturbances) {
-                                //disturbances[name].push(new Array(name, date, hour, lat, lon, pressure, wind));
-                                disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
-                            } else {
-                                disturbances[name] = [];
-                                //disturbances[name].push(new Array(name, date, hour, lat, lon, pressure, wind));
-                                disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
-                            }
-                    }
-                }
+                            disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
+                        } else {
+                            disturbances[name] = [];
+                            disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
+                        }
+                        let arr = Object.values(disturbances);
+                        L.polyline(arr, { color: 'white' }).addTo(disturbance);
+                    });
+                    //
+                    // JTWC JTWC
+                    //
 
-                    let arr = Object.values(disturbances);
-                    L.polyline(arr, { color: 'red' }).addTo(disturbance);
-            }
-        })
+                    if(out[key]['forecast'] !== undefined){
+                        Object.values(out[key]['forecast']['JTWC']).forEach(entry => {
+                        let name_Jtwc = key;
+                        let date_origin = new Date();
+                        let month = date_origin.getMonth()+1;
+                        let date_Jtwc = entry["date"]+"/"+month+"/"+date_origin.getFullYear();
+                        let time_Jtwc = entry["time"];
+                        let lat_Jtwc = entry["lat"];
+                        let lon_Jtwc = entry["lon"];
+                        let wind_Jtwc = entry["wind"];
+                        let gust_Jtwc = entry["gust"];
+                        let wind_kmh_Jtwc = Math.ceil(wind_Jtwc * 1.852);
+                        let gust_kmh_Jtwc = Math.ceil(gust_Jtwc * 1.852);
+                        L.marker([ lat_Jtwc, lon_Jtwc ], { icon: Icon_Fcst }).bindPopup("<b>Date/time</b>:" + date_Jtwc + " " + time_Jtwc + "<br><b>Name</b>: " + name_Jtwc + " <br><b>Wind(knots)</b>: " + wind_Jtwc + "  | <b>Gusts(knots):</b> " + gust_Jtwc + "<br><b>Wind(km/h)</b>: " + wind_kmh_Jtwc + "  | <b>Gusts(km/h):</b>" + gust_kmh_Jtwc + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                        if (name_Jtwc in jtwc) {
+                            jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
+                        } else {
+                            jtwc[name_Jtwc] = [];
+                            jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
+                        }
+                        let arr_jtwc = Object.values(jtwc);
+                        L.polyline(arr_jtwc, { color: 'yellow' }).addTo(disturbance);
+                    });
+                    }
+                });
+
+            }).catch(err => console.error(err));
+
         this.onopen = () => {
             disturbance.addTo(map);
         }
 
         this.onclose = () => {
             map.removeLayer(disturbance);
-        }
 
+        }
     </script>
 </plugin>
