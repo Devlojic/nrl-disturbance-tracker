@@ -6,7 +6,6 @@ module.exports = {
     */
     displayName: 'Cyclone Tracker',
     // Menu
-    hook: 'menu',
+    hook: 'contextmenu',
     // External dependencies
-    dependencies: ['https://unpkg.com/papaparse@latest/papaparse.min.js'],
 };
