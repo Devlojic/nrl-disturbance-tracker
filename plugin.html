@@ -8,7 +8,7 @@
             iconUrl: MARKER_URL,
             iconSize: [48, 48],
             iconAnchor: [24, 24],
-            popupAnchor: [0, 0],
+            popupAnchor: [0, -50],
         });
         const MARKER_DOT = encodeURIComponent("<svg height='480pt' viewBox='0 0 480 480' width='480pt' xmlns='http://www.w3.org/2000/svg'><path d='m432 240c0 106.039062-85.960938 192-192 192s-192-85.960938-192-192 85.960938-192 192-192 192 85.960938 192 192zm0 0' fill='#cfd2fc'/><path d='m240 480c-132.546875 0-240-107.453125-240-240s107.453125-240 240-240 240 107.453125 240 240c-.148438 132.484375-107.515625 239.851562-240 240zm0-464c-123.710938 0-224 100.289062-224 224s100.289062 224 224 224 224-100.289062 224-224c-.140625-123.652344-100.347656-223.859375-224-224zm0 0' fill='#8690fa'/><path d='m352 240c0 61.855469-50.144531 112-112 112s-112-50.144531-112-112 50.144531-112 112-112 112 50.144531 112 112zm0 0' fill='#5153ff'/></svg>");
         const MARKER_DOT_URL = `data:image/svg+xml;utf8,${MARKER_DOT}`;
@@ -29,15 +29,15 @@
         let disturbance = L.layerGroup();
         const disturbances = {};
         const jtwc = {};
-        fetch('https://www.meteoi.re/windy.php')
+        const ukmet = {};
+        const cmrs = {};
+        //fetch('https://www.meteoi.re/windy.php')
+        fetch('https://www.meteoi.re/windyTESTING1324567.php')
             .then(res => res.json())
             .then((out) => {
                 Object.keys(out).forEach(key => {
-                    let lata = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lat']);
-                    let lona = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lon']);
-                    jtwc[key] = [];
-                    jtwc[key].push(new Array(parseFloat(lata), parseFloat(lona)));
-                    L.marker([lata, lona], { icon: Icon }).addTo(disturbance);
+                    console.log(key);
+                    if(key !== "_UKMO"){
                     Object.values(out[key]['track']).forEach(entry => {
                         let name = key;
                         let date = entry["date"];
@@ -49,46 +49,168 @@
                         let wind_kmh = Math.ceil(wind * 1.852);
                         let gust = Math.ceil(wind * 1.35);
                         let gust_kmh = Math.ceil(wind_kmh * 1.35);
-                        L.marker({ lat, lon }, { icon: Icon_Dot }).bindPopup("<b>Date/time</b>:" + date + " " + time +"<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind + "  | <b>Gusts(knots):</b> " + gust + "<br><b>Wind(km/h)</b>: " + wind_kmh + "  | <b>Gusts(km/h):</b>" + gust_kmh + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                        L.marker({ lat, lon }, { icon: Icon_Dot }).bindPopup("<b>Date/time</b>:" + date + " " + time + "<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind + "  | <b>Gusts(knots):</b> " + gust + "<br><b>Wind(km/h)</b>: " + wind_kmh + "  | <b>Gusts(km/h):</b>" + gust_kmh + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
                         if (name in disturbances) {
+                            //disturbances[name].push(new Array(name, date, hour, lat, lon, pressure, wind));
                             disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
                         } else {
                             disturbances[name] = [];
+                            //disturbances[name].push(new Array(name, date, hour, lat, lon, pressure, wind));
                             disturbances[name].push(new Array(parseFloat(lat), parseFloat(lon)));
                         }
                         let arr = Object.values(disturbances);
-                        L.polyline(arr, { color: 'white' }).addTo(disturbance);
+                        L.polyline(arr, { color: 'cyan' }).addTo(disturbance);
+                        let lata = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lat']);
+                        let lona = parseFloat(out[key]['track'][Object.keys(out[key]['track']).pop()]['lon']);
+                        jtwc[key] = [];
+                        jtwc[key].push(new Array(parseFloat(lata), parseFloat(lona)));
+                        L.marker([lata, lona], { icon: Icon }).bindPopup("<b>Date/time</b>:" + date + " " + time + "<br><b>Name</b>: " + name + "<br><b>Pressure</b>: " + pressure + " hPa<br><b>Wind(knots)</b>: " + wind + "  | <b>Gusts(knots):</b> " + gust + "<br><b>Wind(km/h)</b>: " + wind_kmh + "  | <b>Gusts(km/h):</b>" + gust_kmh + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                        let namea = key;
+                        L.marker([lata, lona], {
+                            icon: new L.DivIcon({
+                                className: 'my-div-icon',
+                                html: '' + namea + '',
+                                iconAnchor: [100, 0],
+                            })
+                        }).addTo(disturbance);
                     });
                     //
                     // JTWC JTWC
                     //
-
-                    if(out[key]['forecast'] !== undefined){
+                    if (out[key].hasOwnProperty('forecast')) {
+                        if(out[key]['forecast'].hasOwnProperty('JTWC')){
                         Object.values(out[key]['forecast']['JTWC']).forEach(entry => {
-                        let name_Jtwc = key;
-                        let date_origin = new Date();
-                        let month = date_origin.getMonth()+1;
-                        let date_Jtwc = entry["date"]+"/"+month+"/"+date_origin.getFullYear();
-                        let time_Jtwc = entry["time"];
-                        let lat_Jtwc = entry["lat"];
-                        let lon_Jtwc = entry["lon"];
-                        let wind_Jtwc = entry["wind"];
-                        let gust_Jtwc = entry["gust"];
-                        let wind_kmh_Jtwc = Math.ceil(wind_Jtwc * 1.852);
-                        let gust_kmh_Jtwc = Math.ceil(gust_Jtwc * 1.852);
-                        L.marker([ lat_Jtwc, lon_Jtwc ], { icon: Icon_Fcst }).bindPopup("<b>Date/time</b>:" + date_Jtwc + " " + time_Jtwc + "<br><b>Name</b>: " + name_Jtwc + " <br><b>Wind(knots)</b>: " + wind_Jtwc + "  | <b>Gusts(knots):</b> " + gust_Jtwc + "<br><b>Wind(km/h)</b>: " + wind_kmh_Jtwc + "  | <b>Gusts(km/h):</b>" + gust_kmh_Jtwc + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
-                        if (name_Jtwc in jtwc) {
-                            jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
-                        } else {
-                            jtwc[name_Jtwc] = [];
-                            jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
-                        }
-                        let arr_jtwc = Object.values(jtwc);
-                        L.polyline(arr_jtwc, { color: 'yellow' }).addTo(disturbance);
-                    });
+                            let name_Jtwc = key;
+                            let date_origin = new Date();
+                            let month = date_origin.getMonth() + 1;
+                            let date_Jtwc = entry["date"] + "/" + month + "/" + date_origin.getFullYear();
+                            let time_Jtwc = entry["time"];
+                            let lat_Jtwc = entry["lat"];
+                            let lon_Jtwc = entry["lon"];
+                            let wind_Jtwc = entry["wind"];
+                            let gust_Jtwc = entry["gust"];
+                            let wind_kmh_Jtwc = Math.ceil(wind_Jtwc * 1.852);
+                            let gust_kmh_Jtwc = Math.ceil(gust_Jtwc * 1.852);
+                            let color ;
+                            if (wind_Jtwc >= 130) {
+                                color = "black";
+                              } else if (wind_Jtwc >= 100){
+                                color = "purple";
+                              } else if (wind_Jtwc >= 75){
+                                color = "red";
+                              } else if (wind_Jtwc >= 50){
+                                color = "orange";
+                              } else {
+                                color = "yellow";
+                              }
+                            L.circle([lat_Jtwc, lon_Jtwc], { color: color, fillColor: color, fillOpacity: 0.4, radius: 20000 }).bindPopup("<u>JTWC FORECAST</u><br><b>Date/time</b>:" + date_Jtwc + " " + time_Jtwc + "<br><b>Name</b>: " + name_Jtwc + " <br><b>Wind(knots)</b>: " + wind_Jtwc + "  | <b>Gusts(knots):</b> " + gust_Jtwc + "<br><b>Wind(km/h)</b>: " + wind_kmh_Jtwc + "  | <b>Gusts(km/h):</b>" + gust_kmh_Jtwc + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                            if (name_Jtwc in jtwc) {
+                                jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
+                            } else {
+                                jtwc[name_Jtwc] = [];
+                                jtwc[name_Jtwc].push(new Array(parseFloat(lat_Jtwc), parseFloat(lon_Jtwc)));
+                            }
+                            let arr_jtwc = Object.values(jtwc);
+                            L.polyline(arr_jtwc, { color: 'white', dashArray: '5, 5', dashOffset: '0' }).addTo(disturbance);
+                        });
                     }
-                });
+                    }
 
+                    // UKMET
+                    
+                    if (out[key].hasOwnProperty('forecast')) {
+                        if(out[key]['forecast'].hasOwnProperty('UKMET')){
+                        Object.values(out[key]['forecast']['UKMET']).forEach(entry => {
+                            let name_UKMET = key;
+                            let date_origin = new Date();
+                            let month = date_origin.getMonth() + 1;
+                            let date_UKMET = entry["date"];
+                            let time_UKMET = entry["time"];
+                            let lat_UKMET = entry["lat"];
+                            let lon_UKMET = entry["lon"];
+                            let wind_UKMET = entry["wind"];
+                            let pressure_UKMET = entry["pressure"];
+                            let wind_kmh_UKMET = Math.ceil(wind_UKMET * 1.852);
+                            let color ;
+                            if (wind_UKMET >= 130) {
+                                color = "black";
+                              } else if (wind_UKMET >= 100){
+                                color = "purple";
+                              } else if (wind_UKMET >= 75){
+                                color = "red";
+                              } else if (wind_UKMET >= 50){
+                                color = "orange";
+                              } else {
+                                color = "yellow";
+                              }
+                            L.circle([lat_UKMET, lon_UKMET], { color: color, fillColor: color, fillOpacity: 0.4, radius: 20000 }).bindPopup("<u>UKMET FORECAST</u><br><b>Date/time</b>:" + date_UKMET + " " + time_UKMET + "<br><b>Name</b>: " + name_UKMET + " <br><b>Wind(knots)</b>: " + wind_UKMET + "  <br> <b>Pressure (mb):</b> " + pressure_UKMET +"<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                            if (name_UKMET in ukmet) {
+                                ukmet[name_UKMET].push(new Array(parseFloat(lat_UKMET), parseFloat(lon_UKMET)));
+                            } else {
+                                ukmet[name_UKMET] = [];
+                                ukmet[name_UKMET].push(new Array(parseFloat(lat_UKMET), parseFloat(lon_UKMET)));
+                            }
+                            let arr_UKMET = Object.values(ukmet);
+                            L.polyline(arr_UKMET, { color: 'yellow', dashArray: '5, 5', dashOffset: '0' }).addTo(disturbance);
+                        });
+                    }
+                }
+
+                    // CMRS
+
+                    if (out[key].hasOwnProperty('forecast')) {
+                        if(out[key]['forecast'].hasOwnProperty('CMRS')){
+                        Object.values(out[key]['forecast']['CMRS']).forEach(entry => {
+                            let name_CMRS = key;
+                            let date_origin = new Date();
+                            let month = date_origin.getMonth() + 1;
+                            let date_CMRS = entry["date"];
+                            let time_CMRS = entry["time"];
+                            let lat_CMRS = entry["lat"];
+                            let lon_CMRS = entry["lon"];
+                            let wind_CMRS = entry["wind"];
+                            let pressure_CMRS = entry["pressure"];
+                            let wind_kmh_CMRS = Math.ceil(wind_CMRS * 1.852);
+                            let color ;
+                            if (wind_CMRS >= 130) {
+                                color = "black";
+                              } else if (wind_CMRS >= 100){
+                                color = "purple";
+                              } else if (wind_CMRS >= 75){
+                                color = "red";
+                              } else if (wind_CMRS >= 50){
+                                color = "orange";
+                              } else {
+                                color = "yellow";
+                              }
+                            L.circle([lat_CMRS, lon_CMRS], { color: color, fillColor: color, fillOpacity: 0.4, radius: 20000 }).bindPopup("<u>CMRS FORECAST</u><br><b>Date/time</b>:" + date_CMRS + " " + time_CMRS + "<br><b>Name</b>: " + name_CMRS + " <br><b>Wind(knots)</b>: " + wind_CMRS + "<br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                            if (name_CMRS in cmrs) {
+                                cmrs[name_CMRS].push(new Array(parseFloat(lat_CMRS), parseFloat(lon_CMRS)));
+                            } else {
+                                cmrs[name_CMRS] = [];
+                                cmrs[name_CMRS].push(new Array(parseFloat(lat_CMRS), parseFloat(lon_CMRS)));
+                            }
+                            let arr_CMRS = Object.values(cmrs);
+                            L.polyline(arr_CMRS, { color: 'red', dashArray: '5, 5', dashOffset: '0' }).addTo(disturbance);
+                        });
+                    }
+                    }
+                    else {
+                        if('_UKMO' in out){
+                            Object.values(out['_UKMO']).forEach(entry => {
+                                let color_uk
+                                if(entry["intensity"] == 'CYCLONE'){
+                                    color_uk = 'red';
+                                } else {
+                                    color_uk = 'yellow';
+                                }
+                                L.circle([entry["lat"], entry["lon"]], { color: color_uk, fillColor: color_uk, fillOpacity: 0.4, radius: 300000,weight: 0.7 }).bindPopup("<u>UKMET FORECAST</u><br><b>"+entry["intensity"]+" expected to develop in: +" + entry["time"] + " hours</b><br><small><em>by Meteoi.re</em></small>").addTo(disturbance);
+                            });
+                        }
+                    }
+                }
+                });
+            
             }).catch(err => console.error(err));
 
         this.onopen = () => {
@@ -97,7 +219,6 @@
 
         this.onclose = () => {
             map.removeLayer(disturbance);
-
         }
     </script>
 </plugin>
