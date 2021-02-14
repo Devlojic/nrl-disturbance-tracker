@@ -1,7 +1,4 @@
-# NRL Disturbance Tracker
+# Windy cyclone Tracker
 
-This plugin loads data from the Naval Research Laboratory. It detects disturbances areas worldwide and display these on the map.
+This plugin loads data from the Naval Research Laboratory. It detects disturbances areas worldwide and display these on the map. The latest release allows to display the JTWC, UKMET and RSMC La Reunion forecasts
 
-# Dependencies
-
-This plugin use Papaparse to extract data from server of N.R.L (http://www.nrlmry.navy.mil/tcdat/sectors/ftp_sector_file)
