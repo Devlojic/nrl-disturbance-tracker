@@ -31,8 +31,7 @@
         const jtwc = {};
         const ukmet = {};
         const cmrs = {};
-        //fetch('https://www.meteoi.re/windy.php')
-        fetch('https://www.meteoi.re/windyTESTING1324567.php')
+        fetch('https://www.meteoi.re/windy.php')
             .then(res => res.json())
             .then((out) => {
                 Object.keys(out).forEach(key => {
